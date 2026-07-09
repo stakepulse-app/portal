@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StakePulse — Football Raffle 100K</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{--bg:#080d12;--bg2:#0d1520;--bg3:#111d2a;--border:#1a2d3d;--text:#c8d8e8;--text2:#6a8a9a;--text3:#3a5a6a;--green:#00ff88;--amber:#ffd700;--blue:#00d4ff;--purple:#a855f7;--orange:#ff8c00;--red:#ff3355;}
+[data-theme="light"]{--bg:#f0f4f8;--bg2:#fff;--bg3:#e8edf2;--border:#d0dae4;--text:#1a2a3a;--text2:#4a6a7a;--text3:#8aada8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(251,191,36,.04),transparent 60%);pointer-events:none;}
+
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.5rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.header-left{display:flex;align-items:center;gap:10px;}
+.header-title{font-size:15px;font-weight:800;}
+.back{font-size:11px;color:var(--text2);text-decoration:none;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);transition:all .2s;}
+.back:hover{color:var(--text);border-color:var(--amber);}
+.badge-live{background:rgba(0,255,136,.1);color:var(--green);font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid rgba(0,255,136,.3);display:flex;align-items:center;gap:5px;}
+.badge-live::before{content:'';width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.btn{border:none;padding:6px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn:hover{opacity:.8;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
+
+/* Stats bar */
+.stats-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);}
+.stat-box{background:var(--bg2);padding:12px 16px;text-align:center;}
+.stat-value{font-size:22px;font-weight:800;font-family:monospace;}
+.stat-label{font-size:10px;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}
+
+/* Progress bar total */
+.progress-section{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 1.5rem;}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.progress-title{font-size:13px;font-weight:700;}
+.progress-count{font-size:13px;font-family:monospace;color:var(--amber);font-weight:700;}
+.progress-bar-wrap{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;}
+.progress-bar-fill{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--amber),var(--orange));transition:width .5s ease;}
+.progress-sub{font-size:11px;color:var(--text3);margin-top:5px;}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:1fr 300px;gap:14px;padding:1.25rem 1.5rem;min-height:0;}
+
+/* Leaderboard */
+.lb-panel{display:flex;flex-direction:column;gap:10px;}
+.section-title{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.search-input{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;width:180px;}
+.search-input:focus{border-color:var(--amber);}
+.sort-select{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;}
+
+/* Player cards */
+.player-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;transition:all .2s;}
+.player-card:hover{border-color:rgba(251,191,36,.3);transform:translateX(2px);}
+.player-card.top-1{border-color:rgba(255,215,0,.4);background:linear-gradient(135deg,rgba(255,215,0,.06),var(--bg2));}
+.player-card.top-2{border-color:rgba(192,192,192,.3);background:linear-gradient(135deg,rgba(192,192,192,.04),var(--bg2));}
+.player-card.top-3{border-color:rgba(205,127,50,.3);background:linear-gradient(135deg,rgba(205,127,50,.04),var(--bg2));}
+.player-rank{font-size:18px;font-weight:900;min-width:36px;text-align:center;color:var(--text3);}
+.player-avatar{width:36px;height:36px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--amber);border:1px solid var(--border);flex-shrink:0;overflow:hidden;}
+.player-avatar img{width:100%;height:100%;object-fit:cover;}
+.player-info{flex:1;min-width:0;}
+.player-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.player-sub{font-size:11px;color:var(--text2);margin-top:2px;}
+.player-right{text-align:right;flex-shrink:0;}
+.player-won{font-size:20px;font-weight:900;color:var(--green);}
+.player-total{font-size:11px;color:var(--text3);margin-top:1px;}
+.player-wr{font-size:11px;color:var(--amber);margin-top:1px;}
+
+/* Sidebar */
+.sidebar{display:flex;flex-direction:column;gap:10px;}
+.widget{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.widget-header{padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;}
+.widget-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;flex:1;}
+.widget-body{padding:6px 0;}
+.lb-row{display:flex;align-items:center;gap:8px;padding:6px 12px;transition:background .15s;}
+.lb-row:hover{background:var(--bg3);}
+.lb-rank{font-size:12px;font-weight:700;color:var(--text2);min-width:20px;text-align:center;}
+.lb-name{font-size:12px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lb-val{font-size:12px;font-weight:700;font-family:monospace;}
+
+.empty{text-align:center;padding:3rem 2rem;color:var(--text2);}
+.empty-icon{font-size:48px;margin-bottom:1rem;opacity:.5;}
+.loader{display:flex;align-items:center;justify-content:center;padding:3rem;gap:10px;color:var(--text2);}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.status-bar{background:var(--bg);border-top:1px solid var(--border);padding:4px 1.5rem;font-size:11px;color:var(--text2);display:flex;justify-content:space-between;font-family:monospace;}
+
+.lang-toggle{position:fixed;bottom:20px;left:20px;display:flex;gap:4px;z-index:200;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:4px;}
+.lang-btn{background:transparent;border:none;color:var(--text2);font-size:12px;font-weight:700;padding:4px 10px;border-radius:5px;cursor:pointer;transition:all .2s;}
+.lang-btn.active{background:var(--bg3);color:var(--text);}
+
+@media(max-width:900px){.layout{grid-template-columns:1fr;}.sidebar{display:none;}.stats-bar{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="lang-btn active" onclick="setLang('fr')">🇫🇷 FR</button>
+  <button class="lang-btn" onclick="setLang('en')">🇬🇧 EN</button>
+</div>
+
+<div class="header">
+  <div class="header-left">
+    <a class="back" href="https://stakepulse-app.github.io/portal" data-fr="← Portail" data-en="← Portal">← Portail</a>
+    <span style="font-size:20px">⚽</span>
+    <span class="header-title" data-fr="Football Raffle 100K" data-en="Football Raffle 100K">Football Raffle 100K</span>
+    <span class="badge-live" id="live-badge" style="display:none">LIVE</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span id="proxy-status" style="font-size:11px;color:var(--text2)">...</span>
+    <button class="btn btn-ghost" onclick="toggleTheme()">🌙</button>
+    <button class="btn btn-amber" onclick="loadData()" data-fr="↻ Actualiser" data-en="↻ Refresh">↻ Actualiser</button>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-box"><div class="stat-value" style="color:var(--amber)" id="s-total">—</div><div class="stat-label" data-fr="Total bets" data-en="Total bets">Total bets</div></div>
+  <div class="stat-box"><div class="stat-value" style="color:var(--green)" id="s-won">—</div><div class="stat-label" data-fr="Gagnants" data-en="Winners">Gagnants</div></div>
+  <div class="stat-box"><div class="stat-value" style="color:var(--red)" id="s-lost">—</div><div class="stat-label" data-fr="Perdants" data-en="Losers">Perdants</div></div>
+  <div class="stat-box"><div class="stat-value" style="color:var(--blue)" id="s-players">—</div><div class="stat-label" data-fr="Joueurs" data-en="Players">Joueurs</div></div>
+  <div class="stat-box"><div class="stat-value" style="color:var(--purple)" id="s-wr">—</div><div class="stat-label">Win rate</div></div>
+</div>
+
+<!-- Progress bar -->
+<div class="progress-section">
+  <div class="progress-header">
+    <span class="progress-title" data-fr="📊 Progression des tickets" data-en="📊 Ticket progress">📊 Progression des tickets</span>
+    <span class="progress-count"><span id="prog-count">0</span> / <span id="prog-total">—</span> <span data-fr="bets gagnants" data-en="winning bets">bets gagnants</span></span>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="prog-bar" style="width:0%"></div>
+  </div>
+  <div class="progress-sub" id="prog-sub"></div>
+</div>
+
+<div class="layout">
+  <!-- Leaderboard -->
+  <div class="lb-panel">
+    <div class="toolbar">
+      <input class="search-input" id="search-input" placeholder="🔍 Pseudo..." oninput="applyFilters()">
+      <select class="sort-select" id="sort-select" onchange="applyFilters()">
+        <option value="won" data-fr="Bets gagnants" data-en="Winning bets">Bets gagnants</option>
+        <option value="total" data-fr="Total soumis" data-en="Total submitted">Total soumis</option>
+        <option value="wr" data-fr="Win rate" data-en="Win rate">Win rate</option>
+      </select>
+      <span id="filter-count" style="font-size:11px;color:var(--text2);margin-left:auto"></span>
+    </div>
+    <div id="lb-panel">
+      <div class="loader"><div class="spinner"></div><span data-fr="Chargement..." data-en="Loading...">Chargement...</span></div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="widget">
+      <div class="widget-header"><span>🏆</span><span class="widget-title" data-fr="Top 10 joueurs" data-en="Top 10 players">Top 10 joueurs</span></div>
+      <div class="widget-body" id="top10-body"><div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">...</div></div>
+    </div>
+    <div class="widget">
+      <div class="widget-header"><span>📈</span><span class="widget-title" data-fr="Statistiques" data-en="Statistics">Statistiques</span></div>
+      <div class="widget-body" id="stats-body"><div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">...</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span id="status-text" data-fr="En attente..." data-en="Waiting...">En attente...</span>
+  <span id="last-update">—</span>
+</div>
+
+<script>
+// ── Config ─────────────────────────────────────────────────────────────────
+const PROXY='https://myself-delicious-magazines-dim.trycloudflare.com';
+const RAFFLE_COUNTRY = 'raffle'; // identifiant unique pour ce topic
+
+// Objectif : nb de bets gagnants nécessaires pour la raffle (à ajuster)
+const RAFFLE_TARGET = 1000;
+
+// ── State ──────────────────────────────────────────────────────────────────
+let allPlayers = [];
+let filteredPlayers = [];
+let currentLang = localStorage.getItem('sp_lang') || 'fr';
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function pct(a,b){return b>0?Math.round(a/b*100):0}
+function toggleTheme(){
+  const d=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',d?'light':'dark');
+  document.querySelector('[onclick="toggleTheme()"]').textContent=d?'☀️':'🌙';
+}
+function setLang(lang){
+  currentLang=lang;
+  localStorage.setItem('sp_lang',lang);
+  document.querySelectorAll('[data-fr]').forEach(el=>el.textContent=el.getAttribute('data-'+lang));
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent.includes(lang.toUpperCase())));
+  if(allPlayers.length) renderAll();
+}
+
+// ── Load ───────────────────────────────────────────────────────────────────
+async function loadData(){
+  try {
+    const r = await fetch(`${PROXY}/scrape?country=${RAFFLE_COUNTRY}`, {
+      headers: {'ngrok-skip-browser-warning':'true', 'bypass-tunnel-reminder':'true'}
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+
+    allPlayers = (data.leaderboard || []).filter(u => u.totalBets > 0);
+
+    // Stats globales
+    const totalBets = data.totalBets || 0;
+    const totalWon  = data.totalWon  || 0;
+    const totalLost = allPlayers.reduce((s,u)=>s+u.lostBets,0);
+    const players   = allPlayers.length;
+    const winrate   = pct(totalWon, totalBets);
+
+    document.getElementById('s-total').textContent   = totalBets.toLocaleString();
+    document.getElementById('s-won').textContent     = totalWon.toLocaleString();
+    document.getElementById('s-lost').textContent    = totalLost.toLocaleString();
+    document.getElementById('s-players').textContent = players;
+    document.getElementById('s-wr').textContent      = winrate+'%';
+
+    // Progress bar
+    document.getElementById('prog-count').textContent = totalWon.toLocaleString();
+    document.getElementById('prog-total').textContent = RAFFLE_TARGET.toLocaleString();
+    const pctDone = Math.min(100, Math.round(totalWon/RAFFLE_TARGET*100));
+    document.getElementById('prog-bar').style.width = pctDone+'%';
+    document.getElementById('prog-sub').textContent = currentLang==='fr'
+      ? `${pctDone}% atteint — il manque ${Math.max(0,RAFFLE_TARGET-totalWon).toLocaleString()} bets gagnants`
+      : `${pctDone}% reached — ${Math.max(0,RAFFLE_TARGET-totalWon).toLocaleString()} winning bets remaining`;
+
+    document.getElementById('live-badge').style.display = 'flex';
+    document.getElementById('proxy-status').innerHTML = `<span style="color:var(--green)">✅ ${totalBets} bets</span>`;
+    document.getElementById('last-update').textContent = `${new Date().toLocaleTimeString(currentLang==='fr'?'fr-FR':'en-GB')}`;
+    document.getElementById('status-text').textContent = currentLang==='fr'
+      ? `${players} joueurs · ${totalWon} bets gagnants · ${winrate}% win rate`
+      : `${players} players · ${totalWon} winning bets · ${winrate}% win rate`;
+
+    applyFilters();
+    updateSidebar();
+
+  } catch(err) {
+    document.getElementById('proxy-status').innerHTML = `<span style="color:var(--red)">❌ Hors ligne</span>`;
+    document.getElementById('lb-panel').innerHTML = `<div class="empty"><div class="empty-icon">❌</div><p>${esc(err.message)}</p></div>`;
+  }
+}
+
+// ── Filtres ────────────────────────────────────────────────────────────────
+function applyFilters(){
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const sort   = document.getElementById('sort-select').value;
+
+  filteredPlayers = allPlayers.filter(u =>
+    !search || (u.author||'').toLowerCase().includes(search)
+  );
+
+  if(sort==='won')   filteredPlayers.sort((a,b)=>b.wonBets-a.wonBets);
+  if(sort==='total') filteredPlayers.sort((a,b)=>b.totalBets-a.totalBets);
+  if(sort==='wr')    filteredPlayers.sort((a,b)=>pct(b.wonBets,b.totalBets)-pct(a.wonBets,a.totalBets));
+
+  document.getElementById('filter-count').textContent = `${filteredPlayers.length} joueurs`;
+  renderLeaderboard();
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function renderAll(){ applyFilters(); updateSidebar(); }
+
+function renderLeaderboard(){
+  const panel = document.getElementById('lb-panel');
+  if(!filteredPlayers.length){
+    panel.innerHTML = `<div class="empty"><div class="empty-icon">⚽</div><p data-fr="Aucun joueur trouvé" data-en="No player found">${currentLang==='fr'?'Aucun joueur trouvé':'No player found'}</p></div>`;
+    return;
+  }
+  const medals = ['🥇','🥈','🥉'];
+  const wonLabel   = currentLang==='fr'?'gagnants':'won';
+  const totalLabel = currentLang==='fr'?'soumis':'submitted';
+
+  panel.innerHTML = filteredPlayers.map((u,i) => {
+    const wr = pct(u.wonBets, u.totalBets);
+    const rankClass = i<3 ? `top-${i+1}` : '';
+    const rankDisplay = i<3 ? medals[i] : `#${i+1}`;
+    return `<div class="player-card ${rankClass}">
+      <div class="player-rank">${rankDisplay}</div>
+      <div class="player-avatar">${u.avatar?`<img src="${esc(u.avatar)}" onerror="this.style.display='none'">`:(u.author||'?').charAt(0).toUpperCase()}</div>
+      <div class="player-info">
+        <div class="player-name">${esc(u.author||'?')}</div>
+        <div class="player-sub">${u.totalBets} ${totalLabel}</div>
+      </div>
+      <div class="player-right">
+        <div class="player-won">${u.wonBets}</div>
+        <div class="player-wr">${wr}% WR</div>
+        <div class="player-total">${u.lostBets} ${currentLang==='fr'?'perdus':'lost'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateSidebar(){
+  // Top 10
+  const top10 = [...allPlayers].sort((a,b)=>b.wonBets-a.wonBets).slice(0,10);
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('top10-body').innerHTML = top10.map((u,i) => `
+    <div class="lb-row">
+      <span class="lb-rank">${medals[i]||`#${i+1}`}</span>
+      <span class="lb-name">${esc(u.author||'?')}</span>
+      <div style="text-align:right">
+        <div class="lb-val" style="color:var(--green)">${u.wonBets}</div>
+        <div style="font-size:10px;color:var(--text2)">${u.totalBets} total</div>
+      </div>
+    </div>`).join('') || '<div style="padding:16px;text-align:center;font-size:12px;color:var(--text2)">—</div>';
+
+  // Stats
+  const avgWon = allPlayers.length ? (allPlayers.reduce((s,u)=>s+u.wonBets,0)/allPlayers.length).toFixed(1) : 0;
+  const maxWon = allPlayers.length ? Math.max(...allPlayers.map(u=>u.wonBets)) : 0;
+  const topPlayer = allPlayers.find(u=>u.wonBets===maxWon);
+  document.getElementById('stats-body').innerHTML = `
+    <div class="lb-row"><span style="font-size:16px">🎯</span><div style="flex:1"><div style="font-size:10px;color:var(--text2)">${currentLang==='fr'?'Moy. bets gagnants':'Avg. winning bets'}</div><div style="font-size:13px;font-weight:700">${avgWon}</div></div></div>
+    <div class="lb-row"><span style="font-size:16px">👑</span><div style="flex:1"><div style="font-size:10px;color:var(--text2)">${currentLang==='fr'?'Meilleur joueur':'Best player'}</div><div style="font-size:13px;font-weight:700">${esc(topPlayer?.author||'—')}</div></div><div class="lb-val" style="color:var(--amber)">${maxWon}</div></div>
+    <div class="lb-row"><span style="font-size:16px">📊</span><div style="flex:1"><div style="font-size:10px;color:var(--text2)">${currentLang==='fr'?'Joueurs actifs':'Active players'}</div><div style="font-size:13px;font-weight:700">${allPlayers.length}</div></div></div>
+  `;
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+setLang(currentLang);
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>
